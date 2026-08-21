@@ -21,7 +21,7 @@ object DatabaseModule {
         Room.databaseBuilder(context, AudioBookDatabase::class.java, "audiobook.db")
             // No real user data to preserve yet — wipe and recreate on any schema change instead
             // of hand-writing a Migration for every column tweak during active development.
-            .fallbackToDestructiveMigration(true)
+            .fallbackToDestructiveMigration()
             .build()
 
     @Provides

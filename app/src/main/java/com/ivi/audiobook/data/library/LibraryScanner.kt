@@ -43,12 +43,13 @@ class LibraryScanner @Inject constructor(
 ) {
 
     /**
-     * @param forced Mirrors Helium's LibraryUpdate `mForced` flag: a normal scan (app launch, USB
-     * attach/detach) only soft-hides a missing-but-mounted book, since it might reappear (e.g. a
-     * transient read glitch). A forced scan — the user explicitly hitting reset — actually removes
-     * it from the database, including books that were already hidden from an earlier scan. Either
-     * way, a book whose volume isn't mounted (an unplugged USB drive) is left untouched — it isn't
-     * "gone", it's just not here right now.
+     * @param forced Mirrors Helium's LibraryUpdate `mForced` flag, with one adaptation: a normal
+     * scan (app launch, USB attach/detach) only soft-hides a book whose volume is mounted but the
+     * file is genuinely gone — it leaves a book on an unplugged USB volume alone, since that's not
+     * "gone", just not here right now. A forced scan — the user explicitly hitting reset — is a
+     * deliberate "clean up my library now": it removes any unreachable book outright, including
+     * ones on a currently-unplugged USB drive, and re-checks books already hidden from an earlier
+     * scan too.
      */
     suspend fun scan(forced: Boolean = false): LibraryScanResult = withContext(Dispatchers.IO) {
         if (!StoragePermissions.isGranted()) {
@@ -168,31 +169,47 @@ class LibraryScanner @Inject constructor(
     }
 
     private suspend fun removeOrHideMissingBooks(forced: Boolean) {
-        for (book in bookDao.getAllBooks()) {
-            // A normal scan has nothing new to say about a book that's already hidden. A forced
-            // reset re-checks it too, since this is the explicit "clean up my library" action.
-            if (book.hidden && !forced) continue
+        val allBooks = bookDao.getAllBooks()
+        Log.d(TAG, "removeOrHideMissingBooks() forced=$forced checking ${allBooks.size} book(s)")
+        var removed = 0
+        var hidden = 0
 
+        for (book in allBooks) {
             val file = File(book.filePath)
-            if (file.exists()) continue
+            val exists = file.exists()
+            Log.d(TAG, "book id=${book.id} hidden=${book.hidden} path=${book.filePath} exists=$exists")
 
-            // Only act when the volume is actually mounted and the file is really gone — an
-            // unplugged USB drive should not wipe or hide its books from the library.
-            val storageState = EnvironmentCompat.getStorageState(file)
-            val mounted = storageState == Environment.MEDIA_MOUNTED || storageState == Environment.MEDIA_MOUNTED_READ_ONLY
-            if (!mounted) {
-                Log.d(TAG, "book id=${book.id} path=${book.filePath} missing but volume state=$storageState (likely unplugged) — leaving untouched")
+            if (exists) continue
+
+            if (forced) {
+                // A forced reset is the explicit "clean up my library now" action — remove it
+                // outright regardless of *why* it's unreachable (deleted file, or a USB drive
+                // that's currently unplugged). This intentionally does NOT check mount state:
+                // if the user asked to reset while the drive is out, the book should go.
+                Log.i(TAG, "removing book id=${book.id} path=${book.filePath}: forced reset, file not reachable")
+                bookDao.deleteById(book.id)
+                removed++
                 continue
             }
 
-            if (forced) {
-                Log.i(TAG, "removing book id=${book.id} path=${book.filePath}: forced reset, volume mounted (state=$storageState), file gone")
-                bookDao.deleteById(book.id)
-            } else {
+            if (book.hidden) continue // normal scan has nothing new to say about an already-hidden book
+
+            // Only soft-hide when the volume is actually mounted and the file is really gone — a
+            // background/automatic scan shouldn't silently wipe books just because a USB drive
+            // happens to be unplugged at that moment.
+            val storageState = EnvironmentCompat.getStorageState(file)
+            val mounted = storageState == Environment.MEDIA_MOUNTED || storageState == Environment.MEDIA_MOUNTED_READ_ONLY
+            Log.d(TAG, "book id=${book.id} storageState=$storageState mounted=$mounted")
+            if (mounted) {
                 Log.i(TAG, "hiding book id=${book.id} path=${book.filePath}: volume mounted (state=$storageState) but file is gone")
                 bookDao.updateHidden(book.id, true)
+                hidden++
+            } else {
+                Log.d(TAG, "book id=${book.id} path=${book.filePath} missing but volume state=$storageState (likely unplugged) — leaving untouched")
             }
         }
+
+        Log.i(TAG, "removeOrHideMissingBooks() done: removed=$removed hidden=$hidden")
     }
 
     private fun extractCover(path: String, hash: String): String? {
