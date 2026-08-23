@@ -34,6 +34,7 @@ data class PlaybackUiState(
     val bookId: Long? = null,
     val title: String = "",
     val author: String? = null,
+    val coverPath: String? = null,
     val isPlaying: Boolean = false,
     val positionMs: Long = 0,
     val durationMs: Long = 0,
@@ -90,6 +91,7 @@ class PlaybackController @Inject constructor(
             bookId = book.id,
             title = book.title,
             author = book.author,
+            coverPath = book.coverPath,
             durationMs = book.durationMs,
             positionMs = book.positionMs,
         )
@@ -171,13 +173,15 @@ class PlaybackController @Inject constructor(
     // pauses once at the start of the gesture; the real seek only lands in finishSeek. A tap
     // (no drag) just calls both back-to-back. Doing a real seekTo() on every drag frame would
     // spam the player over IPC and fight the position-poll loop for no benefit.
+    //
+    // The compact strip bar has no play/pause button — opening a book and dragging the seek bar
+    // are the only playback controls — so finishSeek always resumes playback on release rather
+    // than only restoring whatever state preceded the gesture.
     private var isSeekPreviewActive = false
-    private var resumePlaybackAfterSeek = false
 
     fun previewSeek(positionMs: Long) {
         val c = controller ?: return
         if (!isSeekPreviewActive) {
-            resumePlaybackAfterSeek = c.isPlaying
             isSeekPreviewActive = true
             c.pause()
         }
@@ -190,8 +194,7 @@ class PlaybackController @Inject constructor(
         val position = _uiState.value.positionMs
         controller?.seekTo(position)
         isSeekPreviewActive = false
-        if (resumePlaybackAfterSeek) controller?.play()
-        resumePlaybackAfterSeek = false
+        controller?.play()
         persistPosition(position, touched = true)
     }
 
