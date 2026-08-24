@@ -19,15 +19,18 @@ fun PlayerScreen(
 
     LaunchedEffect(bookId) { viewModel.load(bookId) }
 
-    BackHandler {
+    fun closeAndGoBack() {
         viewModel.closePlayer()
         onBack()
     }
+
+    BackHandler { closeAndGoBack() }
 
     CompactPlayerBar(
         uiState = uiState,
         onSeekPreview = viewModel::seekPreview,
         onSeekFinished = viewModel::seekFinished,
+        onClose = ::closeAndGoBack,
         modifier = modifier,
     )
 }

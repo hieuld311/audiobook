@@ -9,8 +9,10 @@ import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -71,18 +73,24 @@ private val COVER_BACKDROP_SIZE = 128.dp
 private val COVER_SIZE = 96.5.dp
 private val PROGRESS_TRACK_HEIGHT = 6.dp
 private val PROGRESS_TOUCH_HEIGHT = 28.dp
+private val CLOSE_BUTTON_SIZE = 28.dp
 
 @Composable
 fun CompactPlayerBar(
     uiState: PlaybackUiState,
     onSeekPreview: (Long) -> Unit,
     onSeekFinished: () -> Unit,
+    onClose: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    // No vertical padding here: the left/right blocks are each already fixed at 208dp tall
+    // internally, matching the display's actual usable content height exactly. Adding vertical
+    // padding on top of that pushed the whole bar past the visible area, clipping the progress bar
+    // (near the bottom of the left block) off-screen.
     Row(
         modifier = modifier
             .background(Color.Black)
-            .padding(horizontal = 24.dp, vertical = 20.dp),
+            .padding(horizontal = 24.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Column(
@@ -123,11 +131,25 @@ fun CompactPlayerBar(
 
         Spacer(Modifier.width(16.dp))
 
-        CompactScriptPreview(
-            lyrics = uiState.lyrics,
-            positionMs = uiState.positionMs,
-            modifier = Modifier.size(RIGHT_BLOCK_WIDTH, RIGHT_BLOCK_HEIGHT),
-        )
+        Box(modifier = Modifier.size(RIGHT_BLOCK_WIDTH, RIGHT_BLOCK_HEIGHT)) {
+            CompactScriptPreview(
+                lyrics = uiState.lyrics,
+                positionMs = uiState.positionMs,
+                modifier = Modifier.fillMaxSize(),
+            )
+            Image(
+                painter = painterResource(R.drawable.ico_general_close_n),
+                contentDescription = "Close player and back to library",
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .size(CLOSE_BUTTON_SIZE)
+                    .clickable(
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = null,
+                        onClick = onClose,
+                    ),
+            )
+        }
     }
 }
 
