@@ -3,21 +3,17 @@ package com.ivi.audiobook.presentation.library
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -27,8 +23,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.ivi.audiobook.presentation.components.BookCoverCard
-import com.ivi.audiobook.presentation.components.LibraryHeaderBar
 import com.ivi.audiobook.presentation.theme.OnSurfaceSecondary
 import com.ivi.audiobook.util.StoragePermissions
 
@@ -54,39 +48,25 @@ fun LibraryScreen(
         if (permissionGranted) viewModel.refresh()
     }
 
-    Column(modifier = modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
-        if (!permissionGranted) {
-            PermissionPrompt(
+    var focusedIndex by remember { mutableIntStateOf(0) }
+    LaunchedEffect(uiState.books.size) {
+        if (focusedIndex > uiState.books.lastIndex) focusedIndex = uiState.books.lastIndex.coerceAtLeast(0)
+    }
+
+    Box(modifier = modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
+        when {
+            !permissionGranted -> PermissionPrompt(
                 onRequest = { permissionLauncher.launch(StoragePermissions.requestIntent(context)) },
                 modifier = Modifier.fillMaxSize(),
             )
-            return@Column
-        }
-
-        LibraryHeaderBar(
-            bookCount = uiState.books.size,
-            query = uiState.query,
-            onSearchTextChange = viewModel::onSearchTextChange,
-            onSortOrderChange = viewModel::onSortOrderChange,
-            onSourceChange = viewModel::onSourceChange,
-            onHideFinishedChange = viewModel::onHideFinishedChange,
-            onRefresh = viewModel::resetLibrary,
-        )
-
-        if (uiState.books.isEmpty()) {
-            EmptyLibraryMessage(isScanning = uiState.isScanning, modifier = Modifier.fillMaxSize())
-        } else {
-            LazyVerticalGrid(
-                columns = GridCells.Adaptive(minSize = 140.dp),
-                contentPadding = PaddingValues(20.dp),
-                horizontalArrangement = Arrangement.spacedBy(20.dp),
-                verticalArrangement = Arrangement.spacedBy(20.dp),
+            uiState.books.isEmpty() -> EmptyLibraryMessage(isScanning = uiState.isScanning, modifier = Modifier.fillMaxSize())
+            else -> CompactLibraryBar(
+                books = uiState.books,
+                focusedIndex = focusedIndex,
+                onFocusChanged = { focusedIndex = it },
+                onOpenBook = onOpenBook,
                 modifier = Modifier.fillMaxSize(),
-            ) {
-                items(uiState.books, key = { it.id }) { book ->
-                    BookCoverCard(book = book, onClick = { onOpenBook(book.id) })
-                }
-            }
+            )
         }
     }
 }
