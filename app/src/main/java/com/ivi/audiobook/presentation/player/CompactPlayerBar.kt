@@ -85,7 +85,12 @@ fun CompactPlayerBar(
             .padding(horizontal = 24.dp, vertical = 20.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Column(modifier = Modifier.size(LEFT_BLOCK_WIDTH, LEFT_BLOCK_HEIGHT), verticalArrangement = Arrangement.Center) {
+        Column(
+            modifier = Modifier
+                .size(LEFT_BLOCK_WIDTH, LEFT_BLOCK_HEIGHT)
+                .padding(horizontal = 10.dp, vertical = 20.dp),
+            verticalArrangement = Arrangement.Center,
+        ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 CoverThumbnail(uiState.coverPath)
                 Spacer(Modifier.width(16.dp))
@@ -107,7 +112,7 @@ fun CompactPlayerBar(
                     )
                 }
             }
-            Spacer(Modifier.height(14.dp))
+            Spacer(Modifier.height(10.dp))
             CompactProgressBar(
                 positionMs = uiState.positionMs,
                 durationMs = uiState.durationMs,
