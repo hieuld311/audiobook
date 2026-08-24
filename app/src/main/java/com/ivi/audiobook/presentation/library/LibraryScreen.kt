@@ -65,6 +65,7 @@ fun LibraryScreen(
                 focusedIndex = focusedIndex,
                 onFocusChanged = { focusedIndex = it },
                 onOpenBook = onOpenBook,
+                onRefresh = viewModel::resetLibrary,
                 modifier = Modifier.fillMaxSize(),
             )
         }

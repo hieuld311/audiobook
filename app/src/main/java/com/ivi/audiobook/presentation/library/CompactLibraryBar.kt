@@ -7,6 +7,7 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -17,6 +18,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -62,6 +66,7 @@ private val CARD_GAP = 24.dp
 private const val FOCUS_SETTLE_THRESHOLD = 0.32f
 private const val FOCUS_SETTLE_ANIMATION_MS = 320
 private const val VISIBLE_WINDOW = 8
+private val REFRESH_BUTTON_SIZE = 28.dp
 
 /**
  * Same 567x208 / 1279x208 split as the compact Player bar: left shows the focused book's
@@ -74,6 +79,7 @@ fun CompactLibraryBar(
     focusedIndex: Int,
     onFocusChanged: (Int) -> Unit,
     onOpenBook: (Long) -> Unit,
+    onRefresh: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Row(
@@ -82,10 +88,10 @@ fun CompactLibraryBar(
             .padding(horizontal = 24.dp, vertical = 20.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Box(modifier = Modifier.size(LEFT_BLOCK_WIDTH, LEFT_BLOCK_HEIGHT), contentAlignment = Alignment.CenterStart) {
+        Box(modifier = Modifier.size(LEFT_BLOCK_WIDTH, LEFT_BLOCK_HEIGHT)) {
             val focused = books.getOrNull(focusedIndex)
             if (focused != null) {
-                Column {
+                Column(modifier = Modifier.align(Alignment.CenterStart)) {
                     Text(
                         text = focused.title,
                         color = Color.White,
@@ -103,6 +109,21 @@ fun CompactLibraryBar(
                     )
                 }
             }
+            // No matching icon in res/ for refresh (unlike the player's close button) — falls back
+            // to the Material icon the old LibraryHeaderBar used.
+            Icon(
+                imageVector = Icons.Default.Refresh,
+                contentDescription = "Rescan library",
+                tint = StripSecondaryText,
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .size(REFRESH_BUTTON_SIZE)
+                    .clickable(
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = null,
+                        onClick = onRefresh,
+                    ),
+            )
         }
 
         Spacer(Modifier.width(16.dp))
