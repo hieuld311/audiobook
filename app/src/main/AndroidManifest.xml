@@ -2,10 +2,6 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
-    <!-- Direct File access to a removable USB/SD volume the app doesn't own requires this —
-         confirmed on target IVI hardware: MediaStore isn't populated for USB (or even internal)
-         audio at all, so the lighter READ_MEDIA_AUDIO scoped-storage exemption never applies. -->
-    <uses-permission android:name="android.permission.MANAGE_EXTERNAL_STORAGE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
 

@@ -9,10 +9,8 @@ import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -54,11 +52,7 @@ import com.ivi.audiobook.data.playback.PlaybackUiState
 import com.ivi.audiobook.domain.model.LyricLine
 import java.io.File
 
-// Matches the sibling cluster-widget app that shares this same physical strip display (Ptop,
-// 3840x203, com.ivi.widgetptop) — same pure-black canvas, same cyan accent (#00D7DB), same
-// secondary-text gray and track color, so this bar reads as native to that display rather than a
-// mismatched guest. That app's widget content box is 1701dp x 160dp with 24dp vertical padding
-// within its half of the screen; this bar targets the same footprint.
+// Matches the sibling widget app's palette (com.ivi.widgetptop): black canvas, cyan accent.
 private val StripAccentCyan = Color(0xFF00D7DB)
 private val StripSecondaryText = Color(0xFFB7B7C2)
 private val StripTrackColor = Color(0xFF393B4A)
@@ -73,14 +67,12 @@ private val COVER_BACKDROP_SIZE = 128.dp
 private val COVER_SIZE = 96.5.dp
 private val PROGRESS_TRACK_HEIGHT = 6.dp
 private val PROGRESS_TOUCH_HEIGHT = 28.dp
-private val CLOSE_BUTTON_SIZE = 28.dp
 
 @Composable
 fun CompactPlayerBar(
     uiState: PlaybackUiState,
     onSeekPreview: (Long) -> Unit,
     onSeekFinished: () -> Unit,
-    onClose: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     // No vertical padding here: the left/right blocks are each already fixed at 208dp tall
@@ -131,25 +123,11 @@ fun CompactPlayerBar(
 
         Spacer(Modifier.width(16.dp))
 
-        Box(modifier = Modifier.size(RIGHT_BLOCK_WIDTH, RIGHT_BLOCK_HEIGHT)) {
-            CompactScriptPreview(
-                lyrics = uiState.lyrics,
-                positionMs = uiState.positionMs,
-                modifier = Modifier.fillMaxSize(),
-            )
-            Image(
-                painter = painterResource(R.drawable.ico_general_close_n),
-                contentDescription = "Close player and back to library",
-                modifier = Modifier
-                    .align(Alignment.TopEnd)
-                    .size(CLOSE_BUTTON_SIZE)
-                    .clickable(
-                        interactionSource = remember { MutableInteractionSource() },
-                        indication = null,
-                        onClick = onClose,
-                    ),
-            )
-        }
+        CompactScriptPreview(
+            lyrics = uiState.lyrics,
+            positionMs = uiState.positionMs,
+            modifier = Modifier.size(RIGHT_BLOCK_WIDTH, RIGHT_BLOCK_HEIGHT),
+        )
     }
 }
 

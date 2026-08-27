@@ -1,6 +1,5 @@
 package com.ivi.audiobook.presentation.player
 
-import androidx.activity.compose.BackHandler
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -10,27 +9,17 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 
 @Composable
 fun PlayerScreen(
-    bookId: Long,
-    onBack: () -> Unit,
     modifier: Modifier = Modifier,
     viewModel: PlayerViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
-    LaunchedEffect(bookId) { viewModel.load(bookId) }
-
-    fun closeAndGoBack() {
-        viewModel.closePlayer()
-        onBack()
-    }
-
-    BackHandler { closeAndGoBack() }
+    LaunchedEffect(Unit) { viewModel.start() }
 
     CompactPlayerBar(
         uiState = uiState,
         onSeekPreview = viewModel::seekPreview,
         onSeekFinished = viewModel::seekFinished,
-        onClose = ::closeAndGoBack,
         modifier = modifier,
     )
 }
