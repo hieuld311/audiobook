@@ -36,14 +36,10 @@ data class PlaybackUiState(
 
 private const val POSITION_POLL_INTERVAL_MS = 500L
 
-// The one and only audio file the app plays — bundled in assets/, no library, no database.
-const val BUILT_IN_ASSET_URI = "asset:///the_lion_and_the_mouse.mp3"
-const val BUILT_IN_TITLE = "The Lion and the Mouse"
-const val BUILT_IN_AUTHOR = "Aesop's Fables"
-
 /**
  * Single app-wide connection to [PlaybackService]'s [MediaController], scoped to the one built-in
- * audio file. No persistence layer: position always starts at 0 on a fresh app launch.
+ * audio file (discovered via [BuiltInAudioAsset], not a hardcoded name). No persistence layer:
+ * position always starts at 0 on a fresh app launch.
  */
 @Singleton
 class PlaybackController @Inject constructor(
@@ -56,7 +52,7 @@ class PlaybackController @Inject constructor(
     private var pollJob: Job? = null
     private var started = false
 
-    private val _uiState = MutableStateFlow(PlaybackUiState(title = BUILT_IN_TITLE, author = BUILT_IN_AUTHOR))
+    private val _uiState = MutableStateFlow(PlaybackUiState())
     val uiState: StateFlow<PlaybackUiState> = _uiState.asStateFlow()
 
     private val playerListener = object : Player.Listener {
@@ -84,12 +80,20 @@ class PlaybackController @Inject constructor(
         if (started) return
         started = true
 
-        val mediaItem = MediaItem.Builder()
-            .setUri(Uri.parse(BUILT_IN_ASSET_URI))
-            .setMediaMetadata(MediaMetadata.Builder().setTitle(BUILT_IN_TITLE).setArtist(BUILT_IN_AUTHOR).build())
-            .build()
-
         scope.launch {
+            val info = BuiltInAudioAsset.resolve(context)
+            _uiState.value = _uiState.value.copy(
+                title = info.title,
+                author = info.author,
+                coverPath = info.coverPath,
+                lyrics = info.lyrics,
+            )
+
+            val mediaItem = MediaItem.Builder()
+                .setUri(Uri.parse(info.assetUri))
+                .setMediaMetadata(MediaMetadata.Builder().setTitle(info.title).setArtist(info.author).build())
+                .build()
+
             val c = controllerReady.await()
             c.setMediaItem(mediaItem)
             c.prepare()
