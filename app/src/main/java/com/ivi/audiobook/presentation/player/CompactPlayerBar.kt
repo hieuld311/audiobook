@@ -36,6 +36,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.clipRect
 import androidx.compose.ui.input.pointer.pointerInput
@@ -67,6 +68,11 @@ private val COVER_BACKDROP_SIZE = 128.dp
 private val COVER_SIZE = 96.5.dp
 private val PROGRESS_TRACK_HEIGHT = 6.dp
 private val PROGRESS_TOUCH_HEIGHT = 28.dp
+private val DIVIDER_THICKNESS = 1.dp
+private val DIVIDER_LENGTH = 184.dp
+private val LYRIC_BOX_HORIZONTAL_PADDING = 32.dp
+private val LYRIC_BOX_VERTICAL_PADDING = 8.dp
+private val LYRIC_TEXT_HORIZONTAL_PADDING = 30.dp
 
 @Composable
 fun CompactPlayerBar(
@@ -123,11 +129,31 @@ fun CompactPlayerBar(
 
         Spacer(Modifier.width(16.dp))
 
-        CompactScriptPreview(
-            lyrics = uiState.lyrics,
-            positionMs = uiState.positionMs,
-            modifier = Modifier.size(RIGHT_BLOCK_WIDTH, RIGHT_BLOCK_HEIGHT),
-        )
+        Box(modifier = Modifier.size(RIGHT_BLOCK_WIDTH, RIGHT_BLOCK_HEIGHT)) {
+            // Same fade-at-both-ends gradient bar as CoWatch's HorizontalGradientDivider
+            // (ShareDisplaysDialog), just rotated: 1px thick x 184px long, vertical, separating
+            // this panel from the left block.
+            Box(
+                modifier = Modifier
+                    .align(Alignment.CenterStart)
+                    .width(DIVIDER_THICKNESS)
+                    .height(DIVIDER_LENGTH)
+                    .background(
+                        Brush.verticalGradient(
+                            0f to Color.Transparent,
+                            0.5f to Color.White,
+                            1f to Color.Transparent,
+                        ),
+                    ),
+            )
+            CompactScriptPreview(
+                lyrics = uiState.lyrics,
+                positionMs = uiState.positionMs,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(horizontal = LYRIC_BOX_HORIZONTAL_PADDING, vertical = LYRIC_BOX_VERTICAL_PADDING),
+            )
+        }
     }
 }
 
@@ -269,7 +295,9 @@ private fun CompactScriptPreview(lyrics: List<LyricLine>, positionMs: Long, modi
                     fontWeight = if (isCurrent) FontWeight.SemiBold else FontWeight.Normal,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.alpha(1f - lineOffset * 0.28f).padding(vertical = 2.dp),
+                    modifier = Modifier
+                        .alpha(1f - lineOffset * 0.28f)
+                        .padding(horizontal = LYRIC_TEXT_HORIZONTAL_PADDING, vertical = 2.dp),
                 )
             }
         }
