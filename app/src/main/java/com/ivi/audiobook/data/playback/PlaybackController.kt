@@ -32,6 +32,7 @@ data class PlaybackUiState(
     val positionMs: Long = 0,
     val durationMs: Long = 0,
     val lyrics: List<LyricLine> = emptyList(),
+    val isPlaybackEnded: Boolean = false,
 )
 
 private const val POSITION_POLL_INTERVAL_MS = 500L
@@ -58,6 +59,12 @@ class PlaybackController @Inject constructor(
     private val playerListener = object : Player.Listener {
         override fun onIsPlayingChanged(isPlaying: Boolean) {
             _uiState.value = _uiState.value.copy(isPlaying = isPlaying)
+        }
+
+        override fun onPlaybackStateChanged(playbackState: Int) {
+            if (playbackState == Player.STATE_ENDED) {
+                _uiState.value = _uiState.value.copy(isPlaybackEnded = true)
+            }
         }
     }
 

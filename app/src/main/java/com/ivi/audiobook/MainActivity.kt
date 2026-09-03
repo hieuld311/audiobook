@@ -21,6 +21,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.ivi.audiobook.data.debug.AudioBookStateProvider
 import com.ivi.audiobook.data.debug.TopPaddingOverrideProvider
+import com.ivi.audiobook.data.playback.PlaybackController
 import com.ivi.audiobook.presentation.player.PlayerScreen
 import com.ivi.audiobook.presentation.theme.AudioBookTheme
 import dagger.hilt.android.AndroidEntryPoint
@@ -35,6 +36,9 @@ class MainActivity : ComponentActivity() {
     @Inject
     lateinit var audioBookStateProvider: AudioBookStateProvider
 
+    @Inject
+    lateinit var playbackController: PlaybackController
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
@@ -48,6 +52,13 @@ class MainActivity : ComponentActivity() {
                     val audioBookState by audioBookStateProvider.state.collectAsStateWithLifecycle()
                     LaunchedEffect(audioBookState) {
                         if (audioBookState == 0) finish()
+                    }
+
+                    // Auto-close once the built-in file has finished playing — there's nothing
+                    // else for this single-file player to do.
+                    val playbackUiState by playbackController.uiState.collectAsStateWithLifecycle()
+                    LaunchedEffect(playbackUiState.isPlaybackEnded) {
+                        if (playbackUiState.isPlaybackEnded) finish()
                     }
 
                     // Same split as the sibling widget app's WidgetHostScreen: this app's window
